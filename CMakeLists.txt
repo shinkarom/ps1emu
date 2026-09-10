@@ -13,6 +13,8 @@ include_directories(
 
 add_executable(${PROJ_NAME}
 	src/main.cpp
+	src/bus.cpp
+	src/core.cpp
 	src/miniaudio.c
 	vendor/glad/src/glad.c
 )

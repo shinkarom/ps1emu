@@ -1,10 +1,17 @@
 #include <iostream>
 #include <cstdint>
+#include <thread>
+#include <chrono>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <miniaudio.h>
 
 #include <core.h>
+
+constexpr double TARGET_FPS = 59.94;
+constexpr double FRAME_TIME = 1.0 / TARGET_FPS;
+double previousTime = glfwGetTime();
+double accumulator = 0.0;
 
 void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
     auto* out = static_cast<int16_t*>(pOutput);
@@ -65,7 +72,18 @@ int main(int argc, char *argv[])
 	
 	while(!glfwWindowShouldClose(window)){
 		glfwPollEvents();
-		core.stepFrame();
+		
+		double currentTime = glfwGetTime();
+		double frameDelta = currentTime - previousTime;
+		previousTime = currentTime;
+		if(frameDelta > 0.25) frameDelta = 0.25;
+		accumulator += frameDelta;
+		
+		while(accumulator >= FRAME_TIME) {
+			core.stepFrame();
+			accumulator -= FRAME_TIME;
+		}
+		
 		
 		glBindTexture(GL_TEXTURE_2D, texture);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1024, 512,
@@ -81,6 +99,7 @@ int main(int argc, char *argv[])
 			GL_NEAREST);
 
 		glfwSwapBuffers(window);
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 	
 	ma_device_uninit(&device);

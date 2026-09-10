@@ -74,14 +74,25 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 int main(int argc, char *argv[])
 {
 	Core core;
-	std::cout<<"Hello World!";
-	glfwInit();
+	std::cout<<"PS1emu";
+	if (!glfwInit()) {
+		std::cerr << "Failed to init GLFW\n";
+		return -1;
+	}
 	GLFWwindow *window = glfwCreateWindow(320, 240, "ps1emu", nullptr, nullptr);
+	if (!window) {
+		glfwTerminate();
+		return -1;
+	}
 	glfwSetWindowUserPointer(window, &core);
 	glfwSetKeyCallback(window, key_callback);
 	glfwMakeContextCurrent(window);
+	glfwSwapInterval(0);
 	
-	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+		std::cerr << "Failed to init GLAD\n";
+		return -1;
+	}
 	
 	GLuint fbo, texture;
 	glGenTextures(1, &texture);

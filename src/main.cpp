@@ -11,8 +11,6 @@
 
 constexpr double TARGET_FPS = 59.94;
 constexpr double FRAME_TIME = 1.0 / TARGET_FPS;
-double previousTime = glfwGetTime();
-double accumulator = 0.0;
 
 void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
     auto* rb = static_cast<ma_pcm_rb*>(pDevice->pUserData);
@@ -24,23 +22,20 @@ void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_ui
         ma_uint32 framesToRead = framesRemaining;
         void* pBuffer = nullptr;
 
-        // 1. Acquire accessible chunk
+
         if (ma_pcm_rb_acquire_read(rb, &framesToRead, &pBuffer) != MA_SUCCESS || framesToRead == 0) {
-            break; // Buffer is empty (underrun)
+            break;
         }
 
-        // 2. Copy the samples (1 frame = 2 samples: L and R)
         size_t samplesToCopy = framesToRead * 2;
         std::memcpy(out, pBuffer, samplesToCopy * sizeof(int16_t));
 
-        // 3. Commit the read (only 2 arguments!)
         ma_pcm_rb_commit_read(rb, framesToRead);
 
         out += samplesToCopy;
         framesRemaining -= framesToRead;
     }
 
-    // 4. Fill any remaining unfulfilled frames with silence (zeros)
     if (framesRemaining > 0) {
         std::memset(out, 0, framesRemaining * 2 * sizeof(int16_t));
     }
@@ -97,6 +92,9 @@ int main(int argc, char *argv[])
 		return -4;
 	}
 	
+	double previousTime = glfwGetTime();
+	double accumulator = 0.0;
+	
 	while(!glfwWindowShouldClose(window)){
 		glfwPollEvents();
 		
@@ -118,17 +116,13 @@ int main(int argc, char *argv[])
 				ma_uint32 framesToWrite = framesAvailable;
 				void* pBuffer = nullptr;
 
-				// 1. Acquire writable chunk
 				if (ma_pcm_rb_acquire_write(&rb, &framesToWrite, &pBuffer) != MA_SUCCESS || framesToWrite == 0) {
-					// Buffer full: emulator running ahead of audio hardware
 					break; 
 				}
 
-				// 2. Copy samples
 				size_t samplesToCopy = framesToWrite * 2;
 				std::memcpy(pBuffer, src, samplesToCopy * sizeof(int16_t));
 
-				// 3. Commit the write (only 2 arguments!)
 				ma_pcm_rb_commit_write(&rb, framesToWrite);
 
 				src += samplesToCopy;
@@ -156,8 +150,8 @@ int main(int argc, char *argv[])
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 	
-	ma_pcm_rb_uninit(&rb);
 	ma_device_uninit(&device);
+	ma_pcm_rb_uninit(&rb);
 	glfwTerminate();
 	return 0;
 }

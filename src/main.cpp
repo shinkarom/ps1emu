@@ -14,6 +14,14 @@ int main(int argc, char *argv[])
 	
 	glEnable(GL_DEPTH_TEST);
 	
+	ma_result result;
+	ma_engine engine;
+	result = ma_engine_init(nullptr, &engine);
+	if(result != MA_SUCCESS){
+		std::cout<<"Error: Could not initialize audio."<<std::endl;
+		return -1;
+	}
+	
 	
 	while(!glfwWindowShouldClose(window)){
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -22,6 +30,7 @@ int main(int argc, char *argv[])
 		glfwPollEvents();
 	}
 	
+	ma_engine_uninit(&engine);
 	glfwTerminate();
 	return 0;
 }

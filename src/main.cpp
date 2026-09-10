@@ -29,7 +29,19 @@ int main(int argc, char *argv[])
 	
 	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 	
-	glEnable(GL_DEPTH_TEST);
+	GLuint fbo, texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1024, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+	
+	glGenFramebuffers(1, &fbo);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+	glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+	
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	
 	ma_device_config deviceConfig = ma_device_config_init(ma_device_type_playback);
 	deviceConfig.playback.format = ma_format_s16;
@@ -55,7 +67,19 @@ int main(int argc, char *argv[])
 		glfwPollEvents();
 		core.stepFrame();
 		
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1024, 512,
+			GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, core.getFramebuffer());
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		int winWidth, winHeight;
+		glfwGetFramebufferSize(window, &winWidth, &winHeight);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glBlitFramebuffer(0, 0, 1024, 512, 
+			0, winHeight, winWidth, 0,
+			GL_COLOR_BUFFER_BIT,
+			GL_NEAREST);
+
 		glfwSwapBuffers(window);
 	}
 	

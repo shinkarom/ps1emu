@@ -1,18 +1,24 @@
 cmake_minimum_required(VERSION 3.13.2)
 
-set(PROJ_NAME cmakeproj_cpp)
+set(PROJ_NAME ps1emu)
 project(${PROJ_NAME} CXX C)
 set(EXE_NAME ${PROJ_NAME})
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
-include_directories(src)
+include_directories(
+	src
+	vendor/glad/include
+	)
 
 add_executable(${PROJ_NAME}
 	src/main.cpp
+	src/miniaudio.c
+	vendor/glad/src/glad.c
 )
 
-#target_link_libraries(${PROJ_NAME} )
+add_subdirectory(vendor/glfw)
+target_link_libraries(${PROJ_NAME} glfw)
 
 set_target_properties(${PROJ_NAME} PROPERTIES
 	LINKER_LANGUAGE CXX

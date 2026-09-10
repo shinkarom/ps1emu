@@ -43,12 +43,42 @@ void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_ui
     (void)pInput;
 }	
 
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (action != GLFW_PRESS && action != GLFW_RELEASE) {
+        return; // Ignore key repeats
+    }
+
+    bool pressed = (action == GLFW_PRESS);
+    auto* core = static_cast<Core*>(glfwGetWindowUserPointer(window));
+
+    switch (key) {
+        case GLFW_KEY_UP:    core->setButton(0, Button::Up, pressed); break;
+        case GLFW_KEY_DOWN:  core->setButton(0, Button::Down, pressed); break;
+        case GLFW_KEY_LEFT:  core->setButton(0, Button::Left, pressed); break;
+        case GLFW_KEY_RIGHT: core->setButton(0, Button::Right, pressed); break;
+
+        case GLFW_KEY_Z:     core->setButton(0, Button::Cross, pressed); break;    // X
+        case GLFW_KEY_X:     core->setButton(0, Button::Circle, pressed); break;   // O
+        case GLFW_KEY_A:     core->setButton(0, Button::Square, pressed); break;   // Square
+        case GLFW_KEY_S:     core->setButton(0, Button::Triangle, pressed); break; // Triangle
+
+        case GLFW_KEY_ENTER: core->setButton(0, Button::Start, pressed); break;
+        case GLFW_KEY_SPACE: core->setButton(0, Button::Select, pressed); break;
+        case GLFW_KEY_Q:     core->setButton(0, Button::L1, pressed); break;
+        case GLFW_KEY_W:     core->setButton(0, Button::R1, pressed); break;
+
+        default: break;
+    }
+}
+
 int main(int argc, char *argv[])
 {
 	Core core;
 	std::cout<<"Hello World!";
 	glfwInit();
 	GLFWwindow *window = glfwCreateWindow(320, 240, "ps1emu", nullptr, nullptr);
+	glfwSetWindowUserPointer(window, &core);
+	glfwSetKeyCallback(window, key_callback);
 	glfwMakeContextCurrent(window);
 	
 	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
@@ -105,6 +135,31 @@ int main(int argc, char *argv[])
 		accumulator += frameDelta;
 		
 		while(accumulator >= FRAME_TIME) {
+			if (glfwJoystickIsGamepad(GLFW_JOYSTICK_1)) {
+				GLFWgamepadstate state;
+				if (glfwGetGamepadState(GLFW_JOYSTICK_1, &state)) {
+					
+					core.setButton(0, Button::Cross,    state.buttons[GLFW_GAMEPAD_BUTTON_A]);
+					core.setButton(0, Button::Circle,   state.buttons[GLFW_GAMEPAD_BUTTON_B]);
+					core.setButton(0, Button::Square,   state.buttons[GLFW_GAMEPAD_BUTTON_X]);
+					core.setButton(0, Button::Triangle, state.buttons[GLFW_GAMEPAD_BUTTON_Y]);
+					core.setButton(0, Button::L1,       state.buttons[GLFW_GAMEPAD_BUTTON_LEFT_BUMPER]);
+					core.setButton(0, Button::R1,       state.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER]);
+					core.setButton(0, Button::L3,       state.buttons[GLFW_GAMEPAD_BUTTON_LEFT_THUMB]);
+					core.setButton(0, Button::R3,       state.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_THUMB]);
+					core.setButton(0, Button::Start,    state.buttons[GLFW_GAMEPAD_BUTTON_START]);
+					core.setButton(0, Button::Select,   state.buttons[GLFW_GAMEPAD_BUTTON_BACK]);
+					core.setButton(0, Button::Up,       state.buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP]);
+					core.setButton(0, Button::Down,     state.buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN]);
+					core.setButton(0, Button::Left,     state.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT]);
+					core.setButton(0, Button::Right,    state.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT]);
+
+					core.setAxis(0, Axis::LeftX,  state.axes[GLFW_GAMEPAD_AXIS_LEFT_X]);
+					core.setAxis(0, Axis::LeftY,  state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]);
+					core.setAxis(0, Axis::RightX, state.axes[GLFW_GAMEPAD_AXIS_RIGHT_X]);
+					core.setAxis(0, Axis::RightY, state.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]);
+				}
+			}
 			core.stepFrame();
 			accumulator -= FRAME_TIME;
 			

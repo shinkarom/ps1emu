@@ -23,3 +23,11 @@ std::span<const int16_t> Core::getAudioSamples() {
 void Core::clearAudioSamples() {
 	
 }
+
+void Core::setButton(int port, Button button, bool pressed){
+	
+}
+
+void Core::setAxis(int port, Axis axis, float value) {
+	
+}

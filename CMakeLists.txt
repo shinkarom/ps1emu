@@ -14,13 +14,12 @@ include_directories(
 add_executable(${PROJ_NAME}
 	src/main.cpp
 	src/bus.cpp
-	src/core.cpp
-	src/miniaudio.c
-	vendor/glad/src/glad.c
+	src/core.cpp 
 )
 
-add_subdirectory(vendor/glfw)
-target_link_libraries(${PROJ_NAME} glfw)
+#add_subdirectory(vendor/glfw)
+add_subdirectory(vendor/raylib)
+target_link_libraries(${PROJ_NAME} raylib)
 
 set_target_properties(${PROJ_NAME} PROPERTIES
 	LINKER_LANGUAGE CXX

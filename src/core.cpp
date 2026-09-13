@@ -31,3 +31,7 @@ void Core::setButton(int port, Button button, bool pressed){
 void Core::setAxis(int port, Axis axis, float value) {
 	
 }
+
+DisplayRegion Core::getDisplayRegion() const {
+	return {0, 0, 320, 240};
+}

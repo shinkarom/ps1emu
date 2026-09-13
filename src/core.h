@@ -30,6 +30,13 @@ enum class Axis {
     RightY
 };
 
+struct DisplayRegion {
+	int x;
+	int y;
+	int width;
+	int height;
+};
+
 class Core {
 	public:
 		Core();
@@ -40,6 +47,7 @@ class Core {
 		void clearAudioSamples();
 		void setButton(int port, Button button, bool pressed);
 		void setAxis(int port, Axis axis, float value);
+		DisplayRegion getDisplayRegion() const;
 		
 	private:
 		Bus bus;

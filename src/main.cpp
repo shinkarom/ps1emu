@@ -3,15 +3,16 @@
 #include <span>
 #include <mutex>
 #include <cstring>
+#include <algorithm>
 #include <raylib.h>
 
-#include <core.h>
+#include "core.h"
 
 constexpr double TARGET_FPS = 59.94;
 constexpr double FRAME_TIME = 1.0 / TARGET_FPS;
 
 // ============================================================================
-// Thread-Safe Audio Ring Buffer for Raylib's Audio Stream
+// Thread-Safe Audio Ring Buffer
 // ============================================================================
 class AudioRingBuffer {
 public:
@@ -22,7 +23,7 @@ public:
         std::lock_guard<std::mutex> lock(mtx);
         for (int16_t sample : samples) {
             size_t next = (head + 1) % capacity;
-            if (next == tail) break; // Buffer full: drop samples to prevent desync
+            if (next == tail) break; // Drop if full
             data[head] = sample;
             head = next;
         }
@@ -35,7 +36,6 @@ public:
             out[samplesRead++] = data[tail];
             tail = (tail + 1) % capacity;
         }
-        // Pad underflows with silence
         if (samplesRead < sampleCount) {
             std::memset(out + samplesRead, 0, (sampleCount - samplesRead) * sizeof(int16_t));
         }
@@ -52,12 +52,11 @@ private:
 static AudioRingBuffer g_audioBuffer(16384);
 
 void audioCallback(void* bufferData, unsigned int frames) {
-    // 2 channels (stereo), 16-bit
     g_audioBuffer.pop(static_cast<int16_t*>(bufferData), frames * 2);
 }
 
 // ============================================================================
-// Clean Input Mapping (Keyboard Physical Keys + Gamepad merged)
+// Input Mapping
 // ============================================================================
 struct ButtonMapping {
     KeyboardKey key;
@@ -65,24 +64,29 @@ struct ButtonMapping {
     Button coreBtn;
 };
 
+// Full mapping matching your Core's enum
 constexpr ButtonMapping MAPPINGS[] = {
-    { KEY_UP,    GAMEPAD_BUTTON_LEFT_FACE_UP,    Button::Up },
-    { KEY_DOWN,  GAMEPAD_BUTTON_LEFT_FACE_DOWN,  Button::Down },
-    { KEY_LEFT,  GAMEPAD_BUTTON_LEFT_FACE_LEFT,  Button::Left },
-    { KEY_RIGHT, GAMEPAD_BUTTON_LEFT_FACE_RIGHT, Button::Right },
+    { KEY_UP,        GAMEPAD_BUTTON_LEFT_FACE_UP,       Button::Up },
+    { KEY_DOWN,      GAMEPAD_BUTTON_LEFT_FACE_DOWN,     Button::Down },
+    { KEY_LEFT,      GAMEPAD_BUTTON_LEFT_FACE_LEFT,     Button::Left },
+    { KEY_RIGHT,     GAMEPAD_BUTTON_LEFT_FACE_RIGHT,    Button::Right },
 
-    { KEY_Z,     GAMEPAD_BUTTON_RIGHT_FACE_DOWN, Button::Cross },    // A / Cross
-    { KEY_X,     GAMEPAD_BUTTON_RIGHT_FACE_RIGHT,Button::Circle },   // B / Circle
-    { KEY_A,     GAMEPAD_BUTTON_RIGHT_FACE_LEFT, Button::Square },   // X / Square
-    { KEY_S,     GAMEPAD_BUTTON_RIGHT_FACE_UP,   Button::Triangle }, // Y / Triangle
+    { KEY_Z,         GAMEPAD_BUTTON_RIGHT_FACE_DOWN,    Button::Cross },
+    { KEY_X,         GAMEPAD_BUTTON_RIGHT_FACE_RIGHT,   Button::Circle },
+    { KEY_A,         GAMEPAD_BUTTON_RIGHT_FACE_LEFT,    Button::Square },
+    { KEY_S,         GAMEPAD_BUTTON_RIGHT_FACE_UP,      Button::Triangle },
 
-    { KEY_ENTER, GAMEPAD_BUTTON_MIDDLE_RIGHT,    Button::Start },
-    { KEY_SPACE, GAMEPAD_BUTTON_MIDDLE_LEFT,     Button::Select },
-    { KEY_Q,     GAMEPAD_BUTTON_LEFT_TRIGGER_1,  Button::L1 },
-    { KEY_W,     GAMEPAD_BUTTON_RIGHT_TRIGGER_1, Button::R1 },
+    { KEY_ENTER,     GAMEPAD_BUTTON_MIDDLE_RIGHT,       Button::Start },
+    { KEY_SPACE,     GAMEPAD_BUTTON_MIDDLE_LEFT,        Button::Select },
+
+    { KEY_Q,         GAMEPAD_BUTTON_LEFT_TRIGGER_1,     Button::L1 },
+    { KEY_W,         GAMEPAD_BUTTON_RIGHT_TRIGGER_1,    Button::R1 },
+    { KEY_E,         GAMEPAD_BUTTON_LEFT_TRIGGER_2,     Button::L2 },
+    { KEY_R,         GAMEPAD_BUTTON_RIGHT_TRIGGER_2,    Button::R2 },
 };
 
 void updateInput(Core& core) {
+    constexpr int PORT = 0;
     bool gamepadAvailable = IsGamepadAvailable(0);
 
     for (const auto& map : MAPPINGS) {
@@ -90,17 +94,17 @@ void updateInput(Core& core) {
         if (gamepadAvailable && IsGamepadButtonDown(0, map.gamepadBtn)) {
             pressed = true;
         }
-        core.setButton(0, map.coreBtn, pressed);
+        core.setButton(PORT, map.coreBtn, pressed);
     }
 
     if (gamepadAvailable) {
-        core.setButton(0, Button::L3, IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_THUMB));
-        core.setButton(0, Button::R3, IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_THUMB));
+        core.setButton(PORT, Button::L3, IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_THUMB));
+        core.setButton(PORT, Button::R3, IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_THUMB));
 
-        core.setAxis(0, Axis::LeftX,  GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X));
-        core.setAxis(0, Axis::LeftY,  GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_Y));
-        core.setAxis(0, Axis::RightX, GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_X));
-        core.setAxis(0, Axis::RightY, GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_Y));
+        core.setAxis(PORT, Axis::LeftX,  GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X));
+        core.setAxis(PORT, Axis::LeftY,  GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_Y));
+        core.setAxis(PORT, Axis::RightX, GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_X));
+        core.setAxis(PORT, Axis::RightY, GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_Y));
     }
 }
 
@@ -110,19 +114,17 @@ void updateInput(Core& core) {
 int main() {
     Core core;
 
-    // Window Setup
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(640, 480, "ps1emu");
     SetWindowMinSize(320, 240);
 
-    // Audio Setup
     InitAudioDevice();
     SetAudioStreamBufferSizeDefault(2048);
     AudioStream audioStream = LoadAudioStream(44100, 16, 2);
     SetAudioStreamCallback(audioStream, audioCallback);
     PlayAudioStream(audioStream);
 
-    // Framebuffer Setup (PS1 16-bit 1555 VRAM: 1024x512)
+    // 1024x512 16-bit texture for PS1 VRAM
     Image blank = GenImageColor(1024, 512, BLANK);
     ImageFormat(&blank, PIXELFORMAT_UNCOMPRESSED_R5G5B5A1);
     Texture2D fbTexture = LoadTextureFromImage(blank);
@@ -134,45 +136,71 @@ int main() {
     while (!WindowShouldClose()) {
         updateInput(core);
 
-        // Frame Timing & Emulation Loop
         double delta = GetFrameTime();
-        if (delta > 0.25) delta = 0.25; // Clamp spiral of death
+        if (delta > 0.25) delta = 0.25;
         accumulator += delta;
 
-        bool newFrameEmulated = false;
+        bool newFrame = false;
         while (accumulator >= FRAME_TIME) {
             core.stepFrame();
             accumulator -= FRAME_TIME;
-            newFrameEmulated = true;
+            newFrame = true;
 
-            // Push audio samples generated by the core
             g_audioBuffer.push(core.getAudioSamples());
             core.clearAudioSamples();
         }
 
-        // Only upload texture if a frame was actually stepped
-        if (newFrameEmulated) {
+        if (newFrame) {
             UpdateTexture(fbTexture, core.getFramebuffer());
         }
 
-        // Render
+        // Display Region & Aspect Ratio calculation
+        DisplayRegion disp = core.getDisplayRegion();
+        
+        // Guard against uninitialized GPU registers on startup
+        if (disp.width <= 0 || disp.height <= 0) {
+            disp.x = 0;
+            disp.y = 0;
+            disp.width = 320;
+            disp.height = 240;
+        }
+
+        Rectangle sourceRec = {
+            static_cast<float>(disp.x),
+            static_cast<float>(disp.y),
+            static_cast<float>(disp.width),
+            static_cast<float>(disp.height)
+        };
+
+        // Standard 4:3 letterboxing
+        float screenW = static_cast<float>(GetScreenWidth());
+        float screenH = static_cast<float>(GetScreenHeight());
+        constexpr float TARGET_ASPECT = 4.0f / 3.0f;
+        
+        float targetW, targetH;
+        float offsetX = 0.0f;
+        float offsetY = 0.0f;
+
+        if ((screenW / screenH) > TARGET_ASPECT) {
+            targetH = screenH;
+            targetW = screenH * TARGET_ASPECT;
+            offsetX = (screenW - targetW) * 0.5f;
+        } else {
+            targetW = screenW;
+            targetH = screenW / TARGET_ASPECT;
+            offsetY = (screenH - targetH) * 0.5f;
+        }
+
+        Rectangle destRec = { offsetX, offsetY, targetW, targetH };
+
         BeginDrawing();
         ClearBackground(BLACK);
 
-        // Draw stretched to window (or adjust src rect to crop to PS1 active display)
-        DrawTexturePro(
-            fbTexture,
-            Rectangle{ 0.0f, 0.0f, 1024.0f, 512.0f },
-            Rectangle{ 0.0f, 0.0f, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight()) },
-            Vector2{ 0.0f, 0.0f },
-            0.0f,
-            WHITE
-        );
+        DrawTexturePro(fbTexture, sourceRec, destRec, Vector2{ 0.0f, 0.0f }, 0.0f, WHITE);
 
         EndDrawing();
     }
 
-    // Teardown
     UnloadTexture(fbTexture);
     UnloadAudioStream(audioStream);
     CloseAudioDevice();

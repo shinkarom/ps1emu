@@ -35,3 +35,7 @@ void Core::setAxis(int port, Axis axis, float value) {
 DisplayRegion Core::getDisplayRegion() const {
 	return {0, 0, 320, 240};
 }
+
+bool Core::loadBIOS(unsigned char* fileData, int fileSize){
+	return bus.loadBIOS(fileData, fileSize);
+}

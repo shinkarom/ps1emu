@@ -48,6 +48,7 @@ class Core {
 		void setButton(int port, Button button, bool pressed);
 		void setAxis(int port, Axis axis, float value);
 		DisplayRegion getDisplayRegion() const;
+		bool loadBIOS(unsigned char* fileData, int fileSize);
 		
 	private:
 		Bus bus;

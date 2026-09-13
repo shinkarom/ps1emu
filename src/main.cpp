@@ -4,6 +4,7 @@
 #include <mutex>
 #include <cstring>
 #include <algorithm>
+#include <string>
 #include <raylib.h>
 
 #include "core.h"
@@ -108,12 +109,34 @@ void updateInput(Core& core) {
     }
 }
 
+bool loadBIOS(Core* core, std::string fileName) {
+	int fileSize;
+	auto fileData = LoadFileData(fileName.c_str(), &fileSize);
+	auto result = core->loadBIOS(fileData, fileSize);
+	UnloadFileData(fileData);
+	return result;
+}
+
 // ============================================================================
 // Main Application
 // ============================================================================
-int main() {
+int main(int argc, char** argv) {
     Core core;
+	
+	std::string biosPath = "bios.bin"; // fallback default
 
+    if (argc > 1) {
+        biosPath = argv[1];
+    } else {
+		std::cerr<<"Error: No BIOS argument provided."<<std::endl;
+		return 1;
+	}
+	
+	if(!loadBIOS(&core, biosPath)) {
+		std::cerr<<"Error: Could not load BIOS."<<std::endl;
+		return 1;
+	}
+	
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(640, 480, "ps1emu");
     SetWindowMinSize(320, 240);

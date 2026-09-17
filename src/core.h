@@ -3,6 +3,7 @@
 #include <span>
 
 #include "bus.h"
+#include <cpu.h>
 
 enum class Button {
     Select   = 0,
@@ -52,4 +53,5 @@ class Core {
 		
 	private:
 		Bus bus;
+		CPU cpu;
 };

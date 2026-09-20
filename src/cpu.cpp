@@ -22,6 +22,7 @@ void CPU::reset() {
 }
 
 void CPU::step() {
+	auto currentPC = pc;
 	auto instr = bus->read32(pc);
 	pc=nextPC;
 	nextPC=pc+4;
@@ -44,8 +45,16 @@ void CPU::step() {
 					regs[rd] = regs[rs] | regs[rt];
 					break;
 				}
+				case 0x2A:{ //SLT
+					regs[rd] = (int32_t)regs[rs]<(int32_t)regs[rt] ? 1 : 0;
+					break;
+				}
+				case 0x2B:{ //SLTU
+					regs[rd] = regs[rs]<regs[rt] ? 1 : 0;
+					break;
+				}
 				default:
-					throw std::runtime_error(std::format("Unknown special opcode {:02X} at {:08X}, {:d} executed", opcode2, pc-4, instrCount));
+					throw std::runtime_error(std::format("Unknown special opcode {:02X} at {:08X}, {:d} executed", opcode2, currentPC, instrCount));
 			}
 			break;
 		}
@@ -83,7 +92,7 @@ void CPU::step() {
 					regsCOP0[rd] = regs[rt];
 					break;
 				default:
-					throw std::runtime_error(std::format("Unknown COP0 opcode {:02X} at {:08X}, {:d} executed", rs, pc-4, instrCount));
+					throw std::runtime_error(std::format("Unknown COP0 opcode {:02X} at {:08X}, {:d} executed", rs, currentPC, instrCount));
 			}
 			break;
 		}
@@ -91,6 +100,11 @@ void CPU::step() {
 			throw std::runtime_error("COP1 unusable");
 		case 0x13: //COP3
 			throw std::runtime_error("COP3 unusable");
+			case 0x23:{ // LW
+				auto addr = regs[rs] + imm_se;
+				regs[rt] = bus->read32(addr);
+				break;
+			}
 		case 0x25:{ // LHU
 			auto addr = regs[rs] + imm_se;
 			regs[rt] = bus->read16(addr);
@@ -102,7 +116,7 @@ void CPU::step() {
 			break;
 		}
 		default:
-			throw std::runtime_error(std::format("Unknown opcode {:02X} at {:08X}, {:d} executed", opcode, pc-4, instrCount));
+			throw std::runtime_error(std::format("Unknown opcode {:02X} at {:08X}, {:d} executed", opcode, currentPC, instrCount));
 	}
 	regs[0]=0;
 	instrCount++;

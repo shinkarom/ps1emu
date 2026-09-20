@@ -15,4 +15,5 @@ class CPU {
 		uint32_t regsCOP0[32];
 		uint32_t hi, lo;
 		uint32_t pc, nextPC;
+		int instrCount = 0;
 };

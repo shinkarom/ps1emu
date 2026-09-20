@@ -12,6 +12,7 @@ CPU::~CPU(){
 void CPU::reset() {
 	for(auto i=0;i<32;i++){
 		regs[i]=0;
+		regsCOP0[i]=0;
 	}
 	hi=0;
 	lo=0;
@@ -21,7 +22,7 @@ void CPU::reset() {
 
 void CPU::step() {
 	auto instr = bus->read32(pc);
-	pc+=4;
+	pc=nextPC;
 	nextPC=pc+4;
 	auto opcode=(instr>>26)&0b111111;
     auto rs     = (instr >> 21) & 0b11111;
@@ -38,15 +39,38 @@ void CPU::step() {
 					regs[rd] = regs[rt]<<sa; 
 					break;
 				}
+				case 0x25:{ // OR
+					regs[rd] = regs[rs] | regs[rt];
+					break;
+				}
 				default:
 					throw std::runtime_error(std::format("Unknown special opcode {:02X} at {:08X}", opcode2, pc-4));
 			}
+			break;
+		}
+		case 0x02:{ // J
+			auto addr = (instr&0x3FFFFFF)<<2;
+			nextPC = (pc&0xF0000000)|addr;
 			break;
 		}
 		case 0x09:{ // ADDIU
 			regs[rt] = regs[rs] + imm_se;
 			break;
 		}
+		case 0x10:{ // COP0
+			switch(rs){
+				case 0x04:
+					regsCOP0[rd] = regs[rt];
+					break;
+				default:
+					throw std::runtime_error(std::format("Unknown COP0 opcode {:02X} at {:08X}", rs, pc-4));
+			}
+			break;
+		}
+		case 0x11: //COP1
+			throw std::runtime_error("COP1 unusable");
+		case 0x13: //COP3
+			throw std::runtime_error("COP3 unusable");
 		case 0x0D:{ //ORI
 			regs[rt] = regs[rs] | imm;
 			break;
@@ -54,6 +78,11 @@ void CPU::step() {
 		case 0x0F:{ //LUI
 			regs[rt] = imm<<16;
 			break;}
+		case 0x25:{ // LHU
+			auto addr = regs[rs] + imm_se;
+			regs[rt] = bus->read16(addr);
+			break;
+		}
 		case 0x2B:{ //SW
 			auto addr = regs[rs] + imm_se;
 			bus->write32(addr, regs[rt]);

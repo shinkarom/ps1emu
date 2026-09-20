@@ -41,6 +41,14 @@ void CPU::step() {
 					regs[rd] = regs[rt]<<sa; 
 					break;
 				}
+				case 0x08:{ // JR
+					nextPC = regs[rs];
+					break;
+				}
+				case 0x21:{ //ADDU
+					regs[rd] = regs[rs] + regs[rt];
+					break;
+				}
 				case 0x25:{ // OR
 					regs[rd] = regs[rs] | regs[rt];
 					break;
@@ -63,6 +71,12 @@ void CPU::step() {
 			nextPC = (pc&0xF0000000)|addr;
 			break;
 		}
+		case 0x03:{ //JAL
+			auto addr = (instr&0x3FFFFFF)<<2;
+			regs[31] = pc + 4;
+			nextPC = (pc&0xF0000000)|addr;
+			break;
+		}
 		case 0x05:{ // BNE
 			auto addr = pc + (imm_se*4);
 			if(regs[rs]!=regs[rt]){
@@ -79,11 +93,15 @@ void CPU::step() {
 			regs[rt] = regs[rs] + imm_se;
 			break;
 		}
-		case 0x0D:{ //ORI
+		case 0x0C:{ // ANDI
+			regs[rt] = regs[rs] & imm;
+			break;
+		}
+		case 0x0D:{ // ORI
 			regs[rt] = regs[rs] | imm;
 			break;
 		}
-		case 0x0F:{ //LUI
+		case 0x0F:{ // LUI
 			regs[rt] = imm<<16;
 			break;}
 		case 0x10:{ // COP0
@@ -108,6 +126,16 @@ void CPU::step() {
 		case 0x25:{ // LHU
 			auto addr = regs[rs] + imm_se;
 			regs[rt] = bus->read16(addr);
+			break;
+		}
+		case 0x28:{ //SB
+			auto addr = regs[rs] + imm_se;
+			bus->write8(addr, regs[rt]&0xFF);
+			break;
+		}
+		case 0x29:{ //SH
+			auto addr = regs[rs] + imm_se;
+			bus->write16(addr, regs[rt]&0xFFFF);
 			break;
 		}
 		case 0x2B:{ //SW

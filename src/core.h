@@ -3,7 +3,11 @@
 #include <span>
 
 #include "bus.h"
-#include <cpu.h>
+#include "cpu.h"
+
+constexpr auto cpuClockPerSecond = 33868800;
+constexpr auto framesPerSecond = 60;
+constexpr int  cpuClockPerFrame = cpuClockPerSecond / framesPerSecond;
 
 enum class Button {
     Select   = 0,

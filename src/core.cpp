@@ -9,7 +9,9 @@ Core::~Core(){
 }
 
 void Core::stepFrame(){
-	
+	for(auto i=0; i<cpuClockPerFrame;i++){
+		cpu.step();
+	}
 }
 
 uint16_t* Core::getFramebuffer(){

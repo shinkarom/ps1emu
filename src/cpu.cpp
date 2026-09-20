@@ -45,8 +45,17 @@ void CPU::step() {
 					nextPC = regs[rs];
 					break;
 				}
+				case 0x20:{ //ADD
+					regs[rd] = regs[rs] + regs[rt];
+					// spec says should trigger overflow exception if overflow happens
+					break;
+				}
 				case 0x21:{ //ADDU
 					regs[rd] = regs[rs] + regs[rt];
+					break;
+				}
+				case 0x24:{ // AND
+					regs[rd] = regs[rs] & regs[rt];
 					break;
 				}
 				case 0x25:{ // OR
@@ -75,6 +84,13 @@ void CPU::step() {
 			auto addr = (instr&0x3FFFFFF)<<2;
 			regs[31] = pc + 4;
 			nextPC = (pc&0xF0000000)|addr;
+			break;
+		}
+		case 0x04:{ // BEQ
+			auto addr = pc + (imm_se*4);
+			if(regs[rs]==regs[rt]){
+				nextPC = addr;
+			}
 			break;
 		}
 		case 0x05:{ // BNE
@@ -106,7 +122,10 @@ void CPU::step() {
 			break;}
 		case 0x10:{ // COP0
 			switch(rs){
-				case 0x04:
+				case 0x00: // MFC0
+					regs[rt] = regsCOP0[rd];
+					break;
+				case 0x04: // LTC0
 					regsCOP0[rd] = regs[rt];
 					break;
 				default:
@@ -118,11 +137,21 @@ void CPU::step() {
 			throw std::runtime_error("COP1 unusable");
 		case 0x13: //COP3
 			throw std::runtime_error("COP3 unusable");
-			case 0x23:{ // LW
-				auto addr = regs[rs] + imm_se;
-				regs[rt] = bus->read32(addr);
-				break;
-			}
+		case 0x20:{ // LB
+			auto addr = regs[rs] + imm_se;
+			regs[rt] = bus->read8(addr);
+			break;
+		}
+		case 0x21:{ // LH
+			auto addr = regs[rs] + imm_se;
+			regs[rt] = bus->read16(addr);
+			break;
+		}
+		case 0x23:{ // LW
+			auto addr = regs[rs] + imm_se;
+			regs[rt] = bus->read32(addr);
+			break;
+		}
 		case 0x25:{ // LHU
 			auto addr = regs[rs] + imm_se;
 			regs[rt] = bus->read16(addr);

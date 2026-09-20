@@ -125,9 +125,14 @@ void CPU::step() {
 				case 0x00: // MFC0
 					regs[rt] = regsCOP0[rd];
 					break;
-				case 0x04: // LTC0
+				case 0x04: // MTC0
 					regsCOP0[rd] = regs[rt];
 					break;
+				case 0x10:{
+					auto imm25 = instr & 0x1FFFFFF;
+					throw std::runtime_error(std::format("Unknown COP0 instruction {:08X} at {:08X}, {:d} executed", imm25, currentPC, instrCount));
+					break;
+				}
 				default:
 					throw std::runtime_error(std::format("Unknown COP0 opcode {:02X} at {:08X}, {:d} executed", rs, currentPC, instrCount));
 			}
@@ -139,12 +144,12 @@ void CPU::step() {
 			throw std::runtime_error("COP3 unusable");
 		case 0x20:{ // LB
 			auto addr = regs[rs] + imm_se;
-			regs[rt] = bus->read8(addr);
+			regs[rt] = (int8_t)(bus->read8(addr));
 			break;
 		}
 		case 0x21:{ // LH
 			auto addr = regs[rs] + imm_se;
-			regs[rt] = bus->read16(addr);
+			regs[rt] = (int16_t)(bus->read16(addr));
 			break;
 		}
 		case 0x23:{ // LW

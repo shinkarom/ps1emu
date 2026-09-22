@@ -49,6 +49,11 @@ void CPU::step() {
 					nextPC = regs[rs];
 					break;
 				}
+				case 0x09:{ //JALR
+					regs[rd] = pc+4;
+					nextPC = regs[rs];
+					break;
+				}
 				case 0x20:{ //ADD
 					regs[rd] = regs[rs] + regs[rt];
 					// spec says should trigger overflow exception if overflow happens
@@ -176,6 +181,12 @@ void CPU::step() {
 			auto addr = regs[rs] + imm_se;
 			regLoad=rt;
 			regValue=bus->read32(addr);
+			break;
+		}
+		case 0x24:{ // LBU
+			auto addr = regs[rs] + imm_se;
+			regLoad=rt;
+			regValue=bus->read8(addr);
 			break;
 		}
 		case 0x25:{ // LHU

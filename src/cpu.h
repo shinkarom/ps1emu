@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <format>
+#include <iostream>
 #include "bus.h"
 
 class CPU {
@@ -15,5 +16,6 @@ class CPU {
 		uint32_t regsCOP0[32];
 		uint32_t hi, lo;
 		uint32_t pc, nextPC;
-		int instrCount = 0;
+		uint32_t regLoad, regValue, delLoad, delValue;
+		int instrCount;
 };

@@ -18,6 +18,10 @@ void CPU::reset() {
 	lo=0;
 	pc=0xBFC00000;
 	nextPC=pc+4;
+	regLoad = 0;
+	regValue = 0;
+	delLoad=0;
+	delValue=0;
 	instrCount = 0;
 }
 
@@ -100,6 +104,20 @@ void CPU::step() {
 			}
 			break;
 		}
+		case 0x06:{ //BLEZ
+			auto addr = pc + (imm_se*4);
+			if((int32_t)regs[rs]<=0){
+				nextPC = addr;
+			}
+			break;
+		}
+		case 0x07:{ //BGTZ
+			auto addr = pc + (imm_se*4);
+			if((int32_t)regs[rs]>0){
+				nextPC = addr;
+			}
+			break;
+		}
 		case 0x08:{ // ADDI
 			regs[rt] = regs[rs] + imm_se;
 			// spec says should do overflow exception if overflow happens instead of mdifying rt
@@ -144,35 +162,42 @@ void CPU::step() {
 			throw std::runtime_error("COP3 unusable");
 		case 0x20:{ // LB
 			auto addr = regs[rs] + imm_se;
-			regs[rt] = (int8_t)(bus->read8(addr));
+			regLoad=rt;
+			regValue=(int8_t)(bus->read8(addr));
 			break;
 		}
 		case 0x21:{ // LH
 			auto addr = regs[rs] + imm_se;
-			regs[rt] = (int16_t)(bus->read16(addr));
+			regLoad=rt;
+			regValue=(int16_t)(bus->read16(addr));
 			break;
 		}
 		case 0x23:{ // LW
 			auto addr = regs[rs] + imm_se;
-			regs[rt] = bus->read32(addr);
+			regLoad=rt;
+			regValue=bus->read32(addr);
 			break;
 		}
 		case 0x25:{ // LHU
 			auto addr = regs[rs] + imm_se;
-			regs[rt] = bus->read16(addr);
+			regLoad=rt;
+			regValue=bus->read16(addr);
 			break;
 		}
 		case 0x28:{ //SB
+			if(regsCOP0[12]&0x10000) break;
 			auto addr = regs[rs] + imm_se;
 			bus->write8(addr, regs[rt]&0xFF);
 			break;
 		}
 		case 0x29:{ //SH
+			if(regsCOP0[12]&0x10000) break;
 			auto addr = regs[rs] + imm_se;
 			bus->write16(addr, regs[rt]&0xFFFF);
 			break;
 		}
 		case 0x2B:{ //SW
+			if(regsCOP0[12]&0x10000) break;
 			auto addr = regs[rs] + imm_se;
 			bus->write32(addr, regs[rt]);
 			break;
@@ -180,6 +205,13 @@ void CPU::step() {
 		default:
 			throw std::runtime_error(std::format("Unknown opcode {:02X} at {:08X}, {:d} executed", opcode, currentPC, instrCount));
 	}
+	if(delLoad!=0){
+		regs[delLoad]=delValue;
+	}
+	delLoad=regLoad;
+	delValue=regValue;
+	regLoad=0;
+	regValue=0;
 	regs[0]=0;
 	instrCount++;
 }

@@ -88,17 +88,44 @@ void CPU::step() {
 			}
 			break;
 		}
-		case 0x01:{ // REGIMM
-			switch(rt){
-				case 0x00:{ // BLTZ
-					auto addr = pc + (imm_se*4);
-					if((int32_t)regs[rs]<0){
-						nextPC = addr;
+		case 0x01: { // REGIMM
+			auto targetAddr = pc + (imm_se * 4); 
+			auto signedVal = static_cast<int32_t>(regs[rs]);
+
+			switch (rt) {
+				case 0x00: { // BLTZ
+					if (signedVal < 0) {
+						nextPC = targetAddr;
+					}
+					break;
+				}
+				case 0x01: { // BGEZ
+					if (signedVal >= 0) {
+						nextPC = targetAddr;
+					}
+					break;
+				}
+				case 0x10: { // BLTZAL
+					bool shouldBranch = (signedVal < 0);
+					regs[31] = pc + 4;
+					if (shouldBranch) {
+						nextPC = targetAddr;
+					}
+					break;
+				}
+				case 0x11: { // BGEZAL
+					bool shouldBranch = (signedVal >= 0);
+					regs[31] = pc + 4;
+					if (shouldBranch) {
+						nextPC = targetAddr;
 					}
 					break;
 				}
 				default:
-					throw std::runtime_error(std::format("Unknown regimm opcode {:02X} at {:08X}, {:d} executed", rt, currentPC, instrCount));	
+					throw std::runtime_error(std::format(
+						"Unknown REGIMM opcode {:02X} at {:08X}, {:d} executed", 
+						rt, currentPC, instrCount
+					));
 			}
 			break;
 		}

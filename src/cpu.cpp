@@ -50,8 +50,8 @@ void CPU::step() {
 					break;
 				}
 				case 0x09:{ //JALR
-					regs[rd] = pc+4;
 					nextPC = regs[rs];
+					regs[rd] = pc+4;
 					break;
 				}
 				case 0x20:{ //ADD
@@ -61,6 +61,10 @@ void CPU::step() {
 				}
 				case 0x21:{ //ADDU
 					regs[rd] = regs[rs] + regs[rt];
+					break;
+				}
+				case 0x23:{ // SUBU
+					regs[rd] = regs[rs] - regs[rt];
 					break;
 				}
 				case 0x24:{ // AND
@@ -81,6 +85,20 @@ void CPU::step() {
 				}
 				default:
 					throw std::runtime_error(std::format("Unknown special opcode {:02X} at {:08X}, {:d} executed", opcode2, currentPC, instrCount));
+			}
+			break;
+		}
+		case 0x01:{ // REGIMM
+			switch(rt){
+				case 0x00:{ // BLTZ
+					auto addr = pc + (imm_se*4);
+					if((int32_t)regs[rs]<0){
+						nextPC = addr;
+					}
+					break;
+				}
+				default:
+					throw std::runtime_error(std::format("Unknown regimm opcode {:02X} at {:08X}, {:d} executed", rt, currentPC, instrCount));	
 			}
 			break;
 		}
@@ -130,6 +148,10 @@ void CPU::step() {
 		}
 		case 0x09:{ // ADDIU
 			regs[rt] = regs[rs] + imm_se;
+			break;
+		}
+		case 0x0A:{ // SLTI
+			regs[rt] = (int32_t)regs[rs] < imm_se ? 1 : 0;
 			break;
 		}
 		case 0x0C:{ // ANDI

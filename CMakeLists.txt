@@ -16,6 +16,12 @@ add_executable(${PROJ_NAME}
 	src/bus.cpp
 	src/core.cpp 
 	src/cpu.cpp
+	src/gte.cpp
+	src/gpu.cpp
+	src/spu.cpp
+	src/dma.cpp
+	src/cd.cpp
+	src/mdec.cpp
 )
 
 #add_subdirectory(vendor/glfw)
